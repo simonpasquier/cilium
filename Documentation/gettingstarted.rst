@@ -84,7 +84,6 @@ To deploy the Cilium Daemon Set, run:
     clusterrole "cilium" created
     serviceaccount "cilium" created
     clusterrolebinding "cilium" created
-    daemonset "cilium-consul" created
     daemonset "cilium" created
 
 Kubernetes is now deploying the Cilium Daemon Set as a pod on all cluster
@@ -100,7 +99,6 @@ Run the following command to check the progress of the deployment:
     $ kubectl get ds --namespace kube-system
     NAME            DESIRED   CURRENT   READY     NODE-SELECTOR   AGE
     cilium          1         1         1         <none>          2m
-    cilium-consul   1         1         1         <none>          2m
 
 Wait until the cilium and cilium-consul Deployments shows a ``READY``
 count of ``1`` like above.

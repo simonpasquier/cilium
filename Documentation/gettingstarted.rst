@@ -11,7 +11,7 @@ your machine. It is designed to take 15-30 minutes.
 If you haven't read the :ref:`intro` yet, we'd encourage you to do that first.
 
 This document includes three different guides:
- * `Getting Started Using Kubernetes`_
+ * `Getting Started Using Kubernetes`_ (Estimated time 10-15 minutes)
  * `Getting Started Using Docker`_
  * `Getting Started Using Mesos`_
 
@@ -162,6 +162,7 @@ All of these pods will be represented in Cilium as `endpoints`. We can invoke th
     $ kubectl -n kube-system get pods -l k8s-app=cilium
     NAME           READY     STATUS    RESTARTS   AGE
     cilium-wjb9t   1/1       Running   0          17m
+
     $ kubectl -n kube-system exec cilium-wjb9t cilium endpoint list
     ENDPOINT   POLICY        IDENTITY   LABELS (source:key[=value])               IPv6                   IPv4            STATUS
                ENFORCEMENT
@@ -286,11 +287,12 @@ You can observe the policy via ``kubectl``
     $ kubectl get networkpolicies
     NAME             POD-SELECTOR   AGE
     access-backend   id=app1        2m
+
     $ kubectl describe networkpolicies access-backend
-    Name:		access-backend
-    Namespace:		default
-    Labels:		<none>
-    Annotations:	<none>
+    Name:           access-backend
+    Namespace:      default
+    Labels:         <none>
+    Annotations:    <none>
 
 
 Step 5:  Apply and Test HTTP-aware L7 Policy
@@ -398,50 +400,52 @@ You can observe the L7 policy via ``kubectl``:
     $ kubectl get ciliumnetworkpolicies
     NAME      KIND                               DESCRIPTION
     rule1     CiliumNetworkPolicy.v2.cilium.io   L7 policy for getting started using Kubernetes guide
+
     $ kubectl describe networkpolicies access-backend
-    Name:		access-backend
-    Namespace:	default
-    Labels:		<none>
-    Annotations:	<none>
+    Name:           access-backend
+    Namespace:      default
+    Labels:         <none>
+    Annotations:    <none>
+
     $ kubectl describe ciliumnetworkpolicies rule1
-    Name:		rule1
-    Namespace:	default
-    Labels:		<none>
-    Annotations:	<none>
-    API Version:	cilium.io/v2
-    Description:	L7 policy for getting started using Kubernetes guide
-    Kind:		CiliumNetworkPolicy
+    Name:           rule1
+    Namespace:      default
+    Labels:         <none>
+    Annotations:    <none>
+    API Version:    cilium.io/v2
+    Description:    L7 policy for getting started using Kubernetes guide
+    Kind:           CiliumNetworkPolicy
     Metadata:
-      Cluster Name:				
-      Creation Timestamp:			2017-08-14T17:52:51Z
-      Deletion Grace Period Seconds:	<nil>
-      Deletion Timestamp:			<nil>
-      Resource Version:			94966
-      Self Link:				/apis/cilium.io/v2/namespaces/default/ciliumnetworkpolicies/rule1
-      UID:					6491cbe9-8119-11e7-8dcd-080027babb71
+      Cluster Name:
+      Creation Timestamp:                   2017-08-25T13:35:04Z
+      Deletion Grace Period Seconds:        <nil>
+      Deletion Timestamp:                   <nil>
+      Resource Version:                     1237
+      Self Link:                            /apis/cilium.io/v2/namespaces/default/ciliumnetworkpolicies/rule1
+      UID:                                  33845d80-899a-11e7-b146-0800277151f0
     Spec:
       Endpoint Selector:
         Match Labels:
-          Id:	app1
+          Id:       app1
       Ingress:
         From Endpoints:
           Match Labels:
-            Id:	app2
+            Id:     app2
         To Ports:
           Ports:
-            Port:		80
-            Protocol:	TCP
+            Port:           80
+            Protocol:       TCP
           Rules:
             Http:
-              Method:	GET
-              Path:		/public
-    Events:			<none>
+              Method:       GET
+              Path:         /public
+    Events:                 <none>
 
 and ``cilium`` CLI:
 
 ::
 
-    $ kubectl exec cilium-<xxx> -n kube-system cilium policy get
+    $ kubectl exec cilium-wjb9t -n kube-system cilium policy get
     [
       {
         "endpointSelector": {
@@ -451,7 +455,7 @@ and ``cilium`` CLI:
           }
         },
         "ingress": [
-          { 
+          {
             "fromEndpoints": [
               {
                 "matchLabels": {
@@ -488,17 +492,17 @@ and ``cilium`` CLI:
           }
         },
         "ingress": [
-           {   
+          {
             "fromEndpoints": [
               {
                 "matchLabels": {
                   "any:id": "app2",
                   "k8s:io.kubernetes.pod.namespace": "default"
-                }  
-               }
+                }
+              }
             ],
             "toPorts": [
-              {   
+              {
                 "ports": [
                   {
                     "port": "80",
@@ -510,11 +514,11 @@ and ``cilium`` CLI:
                     {
                       "path": "/public",
                       "method": "GET"
-                    }  
-                  ]  
+                    }
+                  ]
                 }
               }
-            ]   
+            ]
           }
         ],
         "labels": [
@@ -526,7 +530,7 @@ and ``cilium`` CLI:
         ]
       }
     ]
-    Revision: 26
+    Revision: 14
 
 
 We hope you enjoyed the tutorial.  Feel free to play more with the setup, read

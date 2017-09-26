@@ -708,6 +708,89 @@ func init() {
         }
       }
     },
+    "/prefilter": {
+      "get": {
+        "tags": [
+          "prefilter"
+        ],
+        "summary": "Retrieve list of CIDRs",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/cidrList"
+            }
+          },
+          "500": {
+            "description": "CIDR list get failed",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            },
+            "x-go-name": "Failure"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "prefilter"
+        ],
+        "summary": "Update list of CIDRs",
+        "parameters": [
+          {
+            "$ref": "#/parameters/cidr-list"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated"
+          },
+          "461": {
+            "description": "Invalid CIDR prefix",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            },
+            "x-go-name": "InvalidCIDR"
+          },
+          "500": {
+            "description": "CIDR update failed",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            },
+            "x-go-name": "Failure"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "prefilter"
+        ],
+        "summary": "Delete list of CIDRs",
+        "parameters": [
+          {
+            "$ref": "#/parameters/cidr-list"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deleted"
+          },
+          "461": {
+            "description": "Invalid CIDR prefix",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            },
+            "x-go-name": "InvalidCIDR"
+          },
+          "500": {
+            "description": "CIDR deletion failed",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            },
+            "x-go-name": "Failure"
+          }
+        }
+      }
+    },
     "/service": {
       "get": {
         "tags": [
@@ -1489,9 +1572,33 @@ func init() {
           "$ref": "#/definitions/MonitorStatus"
         }
       }
+    },
+    "cidrList": {
+      "description": "List of CIDRs",
+      "type": "object",
+      "properties": {
+        "list": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "revision": {
+          "type": "integer"
+        }
+      }
     }
   },
   "parameters": {
+    "cidr-list": {
+      "description": "List of CIDRs for filter table",
+      "name": "cidr-list",
+      "in": "body",
+      "required": true,
+      "schema": {
+        "$ref": "#/definitions/cidrList"
+      }
+    },
     "endpoint-change-request": {
       "name": "endpoint",
       "in": "body",

@@ -89,6 +89,8 @@ const (
 	initArgIPv6ServiceRange
 	initArgMode
 	initArgDevice
+	initArgDevicePreFilter
+	initArgModePreFilter
 	initArgMax
 )
 
@@ -106,6 +108,7 @@ type Daemon struct {
 	loadBalancer      *types.LoadBalancer
 	loopbackIPv4      net.IP
 	policy            *policy.Repository
+	preFilter         *policy.PreFilter
 
 	containersMU sync.RWMutex
 	containers   map[string]*container.Container
@@ -344,6 +347,25 @@ func (d *Daemon) fmtPolicyEnforcement() string {
 		return fmt.Sprintf("#define %s\n", endpoint.OptionSpecPolicy.Define)
 	}
 	return fmt.Sprintf("#undef %s\n", endpoint.OptionSpecPolicy.Define)
+}
+
+// Must be called with d.conf.EnablePolicyMU locked.
+func (d *Daemon) writePreFilterHeader(dir string) error {
+	headerPath := filepath.Join(dir, common.PreFilterHeaderFileName)
+	log.Debugf("writing configuration to %s", headerPath)
+	f, err := os.Create(headerPath)
+	if err != nil {
+		return fmt.Errorf("failed to open file %s for writing: %s", headerPath, err)
+
+	}
+	defer f.Close()
+	fw := bufio.NewWriter(f)
+	fmt.Fprint(fw, "/*\n")
+	fmt.Fprintf(fw, " * XDP device: %s\n", d.conf.DevicePreFilter)
+	fmt.Fprintf(fw, " * XDP mode: %s\n", d.conf.ModePreFilter)
+	fmt.Fprint(fw, " */\n\n")
+	d.preFilter.WriteConfig(fw)
+	return fw.Flush()
 }
 
 func (d *Daemon) setHostAddresses() error {
@@ -624,6 +646,9 @@ func (d *Daemon) GetCompilationLock() *sync.RWMutex {
 func (d *Daemon) compileBase() error {
 	var args []string
 	var mode string
+	var ret error
+
+	args = make([]string, initArgMax)
 
 	// Lock so that endpoints cannot be built while we are compile base programs.
 	d.compilationMutex.Lock()
@@ -634,7 +659,26 @@ func (d *Daemon) compileBase() error {
 		return err
 	}
 
-	args = make([]string, initArgMax)
+	if d.conf.DevicePreFilter != "undefined" {
+		if err := policy.ProbePreFilter(d.conf.DevicePreFilter, d.conf.ModePreFilter); err != nil {
+			log.Warningf("Turning off prefilter for %s: %s", d.conf.DevicePreFilter, err)
+			d.conf.DevicePreFilter = "undefined"
+		}
+	}
+	if d.conf.DevicePreFilter != "undefined" {
+		if d.preFilter, ret = policy.NewPreFilter(); ret != nil {
+			log.Warningf("Unable to init prefilter: %s", ret)
+			return ret
+		}
+
+		if err := d.writePreFilterHeader("./"); err != nil {
+			log.Warningf("Unable to write prefilter header: %s", err)
+			return err
+		}
+
+		args[initArgDevicePreFilter] = d.conf.DevicePreFilter
+		args[initArgModePreFilter] = d.conf.ModePreFilter
+	}
 
 	args[initArgLib] = d.conf.BpfDir
 	args[initArgRundir] = d.conf.StateDir

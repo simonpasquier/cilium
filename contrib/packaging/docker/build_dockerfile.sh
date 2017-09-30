@@ -30,7 +30,13 @@ export GOPATH=/tmp/cilium-net-build && \\
 export PATH="\$GOROOT/bin:/usr/local/clang+llvm/bin:\$GOPATH/bin:\$PATH" && \\
 make clean-container build && \\
 make PKG_BUILD=1 install && \\
-groupadd -f cilium
+groupadd -f cilium && \\
+
+# bash-completion-begin
+mkdir -p /root && \\
+echo ". /etc/profile.d/bash_completion.sh" >> /root/.bashrc && \\
+cilium completion bash >> /root/.bashrc
+# bash-completion-end
 EOF
 }
 
@@ -159,12 +165,6 @@ cp bin/loopback /cni && \\
 cd .. && \\
 rm -r tmp && \\
 # cni-end
-
-# bash-completion-begin
-mkdir /root && \\
-echo ". /etc/profile.d/bash_completion.sh" >> /root/.bashrc && \\
-cilium completion bash >> /root/.bashrc && \\
-# bash-completion-end
 
 EOF
 }

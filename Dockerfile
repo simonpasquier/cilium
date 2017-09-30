@@ -55,12 +55,6 @@ cd .. && \
 rm -r tmp && \
 # cni-end
 
-# bash-completion-begin
-mkdir /root && \
-echo ". /etc/profile.d/bash_completion.sh" >> /root/.bashrc && \
-cilium completion bash >> /root/.bashrc && \
-# bash-completion-end
-
 cd /tmp && \
 curl -Sslk -o go.linux-amd64.tar.gz \
 https://storage.googleapis.com/golang/go1.9.linux-amd64.tar.gz && \
@@ -77,6 +71,12 @@ export PATH="$GOROOT/bin:/usr/local/clang+llvm/bin:$GOPATH/bin:$PATH" && \
 make clean-container build && \
 make PKG_BUILD=1 install && \
 groupadd -f cilium && \
+
+# bash-completion-begin
+mkdir -p /root && \
+echo ". /etc/profile.d/bash_completion.sh" >> /root/.bashrc && \
+cilium completion bash >> /root/.bashrc
+# bash-completion-end && \
 
 apt-get purge --auto-remove -y gcc make bison flex git curl xz-utils ca-certificates && \
 apt-get clean && \

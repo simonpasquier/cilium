@@ -20,15 +20,14 @@ spec:
         name: cilium-agent
         command: [ "cilium-agent" ]
         args:
-          - "--debug"
+          - "--debug=$(CILIUM_DEBUG)"
+          - "-t"
+          - "vxlan"
           - "--kvstore"
           - "etcd"
           - "--kvstore-opt"
-          - "etcd.address=http://${ETCD_ADDRESS}"
-          - "-t"
-          - "vxlan"
-          - "--k8s-kubeconfig-path"
-          - "/var/lib/kubelet/kubeconfig"
+          - "etcd.config=/var/lib/etcd-config/etcd.config"
+          - "--disable-ipv4=$(DISABLE_IPV4)"
         lifecycle:
           postStart:
             exec:
@@ -43,6 +42,16 @@ spec:
             valueFrom:
               fieldRef:
                 fieldPath: spec.nodeName
+          - name: "CILIUM_DEBUG"
+            valueFrom:
+              configMapKeyRef:
+                name: cilium-config
+                key: debug
+          - name: "DISABLE_IPV4"
+            valueFrom:
+              configMapKeyRef:
+                name: cilium-config
+                key: disable-ipv4
         livenessProbe:
           exec:
             command:
@@ -70,11 +79,11 @@ spec:
           - name: docker-socket
             mountPath: /var/run/docker.sock
             readOnly: true
-          - name: kubeconfig-path
-            mountPath: /var/lib/kubelet/kubeconfig
+          - name: etcd-config-path
+            mountPath: /var/lib/etcd-config
             readOnly: true
-          - name: kubeconfig-cert
-            mountPath: /var/lib/kubernetes/ca.pem
+          - name: etcd-secrets
+            mountPath: /var/lib/etcd-secrets
             readOnly: true
         securityContext:
           capabilities:
@@ -98,12 +107,15 @@ spec:
         - name: etc-cni-netd
           hostPath:
               path: /etc/cni/net.d
-        - name: kubeconfig-path
-          hostPath:
-              path: /var/lib/kubelet/kubeconfig
-        - name: kubeconfig-cert
-          hostPath:
-              path: /var/lib/kubernetes/ca.pem
+        - name: etcd-config-path
+          configMap:
+            name: cilium-config
+            items:
+            - key: etcd-config
+              path: etcd.config
+        - name: etcd-secrets
+          secret:
+            secretName: cilium-etcd-secrets
       tolerations:
       - effect: NoSchedule
         key: node-role.kubernetes.io/master

@@ -52,10 +52,7 @@ func httpEqual(a, b api.PortRuleHTTP) bool {
 }
 
 func kafkaEqual(a, b api.PortRuleKafka) bool {
-	if a.APIVersion != b.APIVersion || a.APIKey != b.APIKey || a.Topic != b.Topic {
-		return false
-	}
-	return true
+	return a.APIVersion == b.APIVersion && a.APIKey == b.APIKey && a.Topic == b.Topic
 }
 
 type L4Filter struct {

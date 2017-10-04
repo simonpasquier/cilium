@@ -93,7 +93,7 @@ func (d *Daemon) EnableEndpointPolicyEnforcement(e *endpoint.Endpoint) bool {
 	} else if policy.GetPolicyEnabled() == endpoint.DefaultEnforcement {
 		// Default mode means that if rules contain labels that match this endpoint,
 		// then enable policy enforcement for this endpoint.
-		// TODO: Could check e.Consumable instead? Would be much cheaper.
+		// GH-1676: Could check e.Consumable instead? Would be much cheaper.
 		return d.GetPolicyRepository().GetRulesMatching(e.Consumable.LabelArray, false)
 	}
 	// If policy enforcement isn't enabled for the daemon we do not enable

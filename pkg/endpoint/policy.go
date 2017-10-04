@@ -54,9 +54,8 @@ func (e *Endpoint) allowConsumer(owner Owner, id policy.NumericIdentity) bool {
 	cache := policy.GetConsumableCache()
 	if !e.Opts.IsEnabled(OptionConntrack) {
 		return e.Consumable.AllowConsumerAndReverseLocked(cache, id)
-	} else {
-		return e.Consumable.AllowConsumerLocked(cache, id)
 	}
+	return e.Consumable.AllowConsumerLocked(cache, id)
 }
 
 func (e *Endpoint) invalidatePolicy() {
@@ -325,16 +324,12 @@ func (e *Endpoint) regeneratePolicy(owner Owner) (bool, error) {
 	log.Debugf("[%s] Done regenerating revision=%v policyChanged=%v optsChanged=%v",
 		e.PolicyID(), revision, policyChanged, optsChanged)
 
+	e.nextPolicyRevision = revision
 	// If no policy or options change occurred for this endpoint then the endpoint is
 	// already running the latest revision, otherwise we have to wait for
 	// the regeneration of the endpoint to complete.
 	if !(policyChanged || optsChanged) {
 		e.policyRevision = revision
-		e.nextPolicyRevision = revision
-	} else {
-		// keep the current policyRevision top mark the need
-		// for BPF re-generation
-		e.nextPolicyRevision = revision
 	}
 
 	// Return if need to regenerate BPF

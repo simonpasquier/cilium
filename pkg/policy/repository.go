@@ -289,3 +289,10 @@ func (p *Repository) NumRules() int {
 func (p *Repository) GetRevision() uint64 {
 	return p.revision
 }
+
+// BumpRevision allows forcing policy regeneration
+func (p *Repository) BumpRevision() {
+	p.Mutex.Lock()
+	defer p.Mutex.Unlock()
+	p.revision++
+}

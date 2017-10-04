@@ -35,6 +35,29 @@ const (
 	ParserTypeKafka L7ParserType = "kafka"
 )
 
+func httpEqual(a, b api.PortRuleHTTP) bool {
+	if a.Path != b.Path ||
+		a.Method != b.Method ||
+		a.Host != b.Host ||
+		len(a.Headers) != len(b.Headers) {
+		return false
+	}
+
+	for i, value := range a.Headers {
+		if b.Headers[i] != value {
+			return false
+		}
+	}
+	return true
+}
+
+func kafkaEqual(a, b api.PortRuleKafka) bool {
+	if a.APIVersion != b.APIVersion || a.APIKey != b.APIKey || a.Topic != b.Topic {
+		return false
+	}
+	return true
+}
+
 type L4Filter struct {
 	// Port is the destination port to allow
 	Port int
@@ -48,6 +71,30 @@ type L4Filter struct {
 	L7Rules api.L7Rules
 	// Ingress is true if filter applies at ingress
 	Ingress bool
+}
+
+func (l4 L4Filter) PolicyEqual(l4b L4Filter) bool {
+	if l4.Port != l4b.Port ||
+		l4.Protocol != l4b.Protocol ||
+		l4.L7Parser != l4b.L7Parser ||
+		l4.L7RedirectPort != l4b.L7RedirectPort ||
+		len(l4.L7Rules.HTTP) != len(l4b.L7Rules.HTTP) ||
+		len(l4.L7Rules.Kafka) != len(l4b.L7Rules.Kafka) ||
+		l4.Ingress != l4b.Ingress {
+		return false
+	}
+	// different order => not equal
+	for i, h := range l4.L7Rules.HTTP {
+		if !httpEqual(h, l4b.L7Rules.HTTP[i]) {
+			return false
+		}
+	}
+	for i, k := range l4.L7Rules.Kafka {
+		if !kafkaEqual(k, l4b.L7Rules.Kafka[i]) {
+			return false
+		}
+	}
+	return true
 }
 
 // CreateL4Filter creates an L4Filter based on an api.PortRule and api.PortProtocol
@@ -104,6 +151,18 @@ func (l4 L4Filter) String() string {
 // L4PolicyMap is a list of L4 filters indexable by protocol/port
 // key format: "port/proto"
 type L4PolicyMap map[string]L4Filter
+
+func (l4 L4PolicyMap) PolicyEqual(l4b L4PolicyMap) bool {
+	if len(l4) != len(l4b) {
+		return false
+	}
+	for key, value := range l4 {
+		if l4b[key].PolicyEqual(value) {
+			return false
+		}
+	}
+	return true
+}
 
 // HasRedirect returns true if at least one L4 filter contains a port
 // redirection
@@ -221,4 +280,14 @@ func (l4 *L4Policy) DeepCopy() *L4Policy {
 	}
 
 	return cpy
+}
+
+func (l4 *L4Policy) PolicyEqual(l4b *L4Policy) bool {
+	if l4 == nil && l4b == nil {
+		return true
+	}
+	if l4 == nil || l4b == nil {
+		return false
+	}
+	return l4.Ingress.PolicyEqual(l4b.Ingress) && l4.Egress.PolicyEqual(l4b.Egress)
 }

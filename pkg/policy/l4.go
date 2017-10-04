@@ -73,6 +73,7 @@ type L4Filter struct {
 	Ingress bool
 }
 
+// PolicyEqual returns true if the L4 filters are the same.
 func (l4 L4Filter) PolicyEqual(l4b L4Filter) bool {
 	if l4.Port != l4b.Port ||
 		l4.Protocol != l4b.Protocol ||
@@ -152,6 +153,7 @@ func (l4 L4Filter) String() string {
 // key format: "port/proto"
 type L4PolicyMap map[string]L4Filter
 
+// PolicyEqual returns true if the L4 policy maps are the same.
 func (l4 L4PolicyMap) PolicyEqual(l4b L4PolicyMap) bool {
 	if len(l4) != len(l4b) {
 		return false
@@ -282,6 +284,7 @@ func (l4 *L4Policy) DeepCopy() *L4Policy {
 	return cpy
 }
 
+// PolicyEqual returns true if the L4 policies are the same.
 func (l4 *L4Policy) PolicyEqual(l4b *L4Policy) bool {
 	if l4 == nil && l4b == nil {
 		return true

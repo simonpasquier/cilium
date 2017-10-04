@@ -29,7 +29,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type LabelArrays map[policy.NumericIdentity]labels.LabelArray
+type labelArrays map[policy.NumericIdentity]labels.LabelArray
 
 func (e *Endpoint) checkEgressAccess(owner Owner, dstLabels labels.LabelArray, opts models.ConfigurationMap, opt string) {
 	ctx := policy.SearchContext{
@@ -100,8 +100,8 @@ func (e *Endpoint) cleanUnusedRedirects(owner Owner, oldMap policy.L4PolicyMap, 
 	}
 }
 
-func getLabelArrays(owner Owner, cache *policy.ConsumableCache, minID, maxID policy.NumericIdentity) (LabelArrays, error) {
-	labels := map[policy.NumericIdentity]labels.LabelArray{}
+func getLabelsMap(owner Owner, cache *policy.ConsumableCache, minID, maxID policy.NumericIdentity) (labelArrays, error) {
+	labelsMap := map[policy.NumericIdentity]labels.LabelArray{}
 	reservedIDs := cache.GetReservedIDs()
 	var idx policy.NumericIdentity
 	for _, idx = range reservedIDs {
@@ -113,7 +113,7 @@ func getLabelArrays(owner Owner, cache *policy.ConsumableCache, minID, maxID pol
 		if lbls == nil || len(lbls) == 0 {
 			continue
 		}
-		labels[idx] = lbls
+		labelsMap[idx] = lbls
 	}
 
 	for idx = minID; idx < maxID; idx++ {
@@ -125,14 +125,14 @@ func getLabelArrays(owner Owner, cache *policy.ConsumableCache, minID, maxID pol
 		if lbls == nil || len(lbls) == 0 {
 			continue
 		}
-		labels[idx] = lbls
+		labelsMap[idx] = lbls
 	}
 
-	return labels, nil
+	return labelsMap, nil
 }
 
 // Must be called with global endpoint.Mutex held
-func (e *Endpoint) regenerateConsumable(owner Owner, labelArrays LabelArrays, repo *policy.Repository, revision uint64, c *policy.Consumable) (bool, error) {
+func (e *Endpoint) regenerateConsumable(owner Owner, labelsMap labelArrays, repo *policy.Repository, revision uint64, c *policy.Consumable) (bool, error) {
 	// Containers without a security label are not accessible
 	if c.ID == 0 {
 		log.Fatalf("[%s] BUG: Endpoints lacks identity", e.PolicyID())
@@ -180,7 +180,7 @@ func (e *Endpoint) regenerateConsumable(owner Owner, labelArrays LabelArrays, re
 		}
 	}
 
-	for srcID, srcLabels := range labelArrays {
+	for srcID, srcLabels := range labelsMap {
 		ctx.From = srcLabels
 		log.Debugf("[%s] Evaluating context %+v", e.PolicyID(), ctx)
 
@@ -279,13 +279,13 @@ func (e *Endpoint) regeneratePolicy(owner Owner) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	labelArrays, err := getLabelArrays(owner, cache, policy.MinimalNumericIdentity, maxID)
+	labelsMap, err := getLabelsMap(owner, cache, policy.MinimalNumericIdentity, maxID)
 	if err != nil {
 		log.Debugf("[%s] Received error while evaluating policy: %s", e.PolicyID(), err)
 		return false, err
 	}
 
-	policyChanged, err := e.regenerateConsumable(owner, labelArrays, repo, revision, c)
+	policyChanged, err := e.regenerateConsumable(owner, labelsMap, repo, revision, c)
 	if err != nil {
 		return false, err
 	}
@@ -295,8 +295,8 @@ func (e *Endpoint) regeneratePolicy(owner Owner) (bool, error) {
 		policyChanged = true
 	}
 
-	e.checkEgressAccess(owner, labelArrays[policy.ReservedIdentityHost], opts, OptionAllowToHost)
-	e.checkEgressAccess(owner, labelArrays[policy.ReservedIdentityWorld], opts, OptionAllowToWorld)
+	e.checkEgressAccess(owner, labelsMap[policy.ReservedIdentityHost], opts, OptionAllowToHost)
+	e.checkEgressAccess(owner, labelsMap[policy.ReservedIdentityWorld], opts, OptionAllowToWorld)
 
 	if e.Consumable.L4Policy.RequiresConntrack() {
 		opts[OptionConntrack] = "enabled"

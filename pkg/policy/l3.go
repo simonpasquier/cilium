@@ -173,15 +173,15 @@ func (l3 *L3Policy) DeepCopy() *L3Policy {
 	}
 }
 
-// Equal returns true if policy described by 'n' is equal to that of 'm'.
-func (m *L3Policy) PolicyEqual(n *L3Policy) bool {
-	if m == nil && n == nil {
+// PolicyEqual returns true if policy described by 'n' is equal to that of 'l3'.
+func (l3 *L3Policy) PolicyEqual(n *L3Policy) bool {
+	if l3 == nil && n == nil {
 		return true
 	}
-	if m == nil || n == nil {
+	if l3 == nil || n == nil {
 		return false
 	}
-	return m.Ingress.PolicyEqual(n.Ingress) && m.Egress.PolicyEqual(n.Egress)
+	return l3.Ingress.PolicyEqual(n.Ingress) && l3.Egress.PolicyEqual(n.Egress)
 }
 
 // GetModel returns the API model representation of the L3Policy.

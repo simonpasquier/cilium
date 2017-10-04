@@ -12,6 +12,7 @@ certs_dir="${dir}/certs"
 k8s_dir="${dir}/k8s"
 cilium_dir="${dir}/cilium"
 rbac_yaml="${dir}/../../../examples/kubernetes/rbac.yaml"
+config_maps="${dir}/cilium-config.yaml"
 
 function get_options(){
     if [[ "${1}" == "ipv6" ]]; then
@@ -193,16 +194,49 @@ function install_kubeadm() {
 }
 
 function install_cilium_config(){
-    sudo mkdir -p /var/lib/cilium
+    cat > "${dir}/cilium-config.yaml" <<EOF
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: cilium-config
+  namespace: kube-system
+data:
+  debug: "true"
 
-    sudo cp "${certs_dir}/ca.pem" \
-       "/var/lib/cilium/etcd-ca.pem"
+  # Configure this with the location of your etcd cluster.
+  etcd-config: |-
+    ---
+    endpoints:
+    - https://${controller_ip_brackets}:2379
+    #
+    # In case you want to use TLS in etcd, uncomment the following line
+    # and add the certificate in cilium-etcd-secrets bellow
+    ca-file: '/var/lib/etcd-secrets/etcd-ca'
+    #
+    # In case you want client to server authentication, uncomment the following
+    # lines and add the certificate and key in cilium-etcd-secrets bellow
+    #key-file: '/var/lib/etcd-secrets/etcd-client-key'
+    #cert-file: '/var/lib/etcd-secrets/etcd-client-crt'
 
-    sudo tee /var/lib/cilium/etcd-config.yml <<EOF
+  disable-ipv4: "false"
+
 ---
-endpoints:
-- https://${controller_ip_brackets}:2379
-ca-file: '/var/lib/cilium/etcd-ca.pem'
+# The following contains k8s Secrets for use with a TLS enabled etcd cluster.
+# For information on populating Secrets, see http://kubernetes.io/docs/user-guide/secrets/
+apiVersion: v1
+kind: Secret
+type: Opaque
+metadata:
+  name: cilium-etcd-secrets
+  namespace: kube-system
+data:
+  # Populate the following files with etcd TLS configuration if desired, but leave blank if
+  # not using TLS for etcd.
+  # This self-hosted install expects three files with the following names.  The values
+  # should be base64 encoded strings of the entire contents of each file.
+  etcd-ca: "$(cat "${certs_dir}/ca.pem" | base64 -w 0)"
+  etcd-client-key: ""
+  etcd-client-crt: ""
 EOF
 
 }
@@ -339,6 +373,7 @@ function deploy_cilium(){
             "${cilium_dir}/cilium-ds.yaml.sed" > "${cilium_dir}/cilium-ds.yaml"
 
         kubectl create -f "${rbac_yaml}"
+        kubectl create -f "${config_maps}"
         kubectl create -f "${cilium_dir}"
 
         wait_for_daemon_set_ready kube-system cilium 2
